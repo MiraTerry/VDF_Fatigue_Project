@@ -9,55 +9,59 @@ import SimpleITK as sitk
 
 import numpy as np
 import os
-# import matplotlib.pyplot as plt
 
-# from downloaddata import fetch_data as fdata/
+reader = sitk.ImageSeriesReader()
+reader.SetImageIO("TIFFImageIO")
 
-# OUTPUT_DIR = "output"
+input_path = "XCT data/test_piece"
+series_filenames = sorted([os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith(".tif") or f.endswith(".tiff")])
+reader.SetFileNames(series_filenames)
+image = reader.Execute()
+# hi
+resample_filter = sitk.ResampleImageFilter()
+# resample_filter.SetReferenceImage(image)
+print(f"Size: {resample_filter.GetSize()}")
 
-# image_viewer = sitk.ImageViewer()
+resample_filter.SetOutputSpacing((2, 2, 2))
+resample_filter.SetInterpolator(sitk.sitkNearestNeighbor)
+resample_filter.SetSize((int(image.GetSize()[0] / 2), 
+                          int(image.GetSize()[1] / 2), 
+                          int(image.GetSize()[2] / 2)))
+print(f"Size: {resample_filter.GetSize()}")
+image = resample_filter.Execute(image)
 
-# reader = sitk.ImageSeriesReader()
-# reader.SetImageIO("TIFFImageIO")
+writer = sitk.ImageSeriesWriter()
+writer.SetImageIO(reader.GetImageIO())
 
-# image_path = "C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_1\\Specimen_1\\segmented_cleaned_combined\\segmented_cleaned_combined"
-# image_files = sorted([os.path.join(image_path, f) for f in os.listdir(image_path) if f.endswith(".tif") or f.endswith(".tiff")])
-# reader.SetFileNames(image_files)
-# image = reader.Execute()
-# # hi
-# resampled_image = sitk.ResampleImageFilter()
-# resampled_image.SetReferenceImage(image)
-# print(f"Size: {resampled_image.GetSize()}")
-
-# resampled_image.SetOutputSpacing((2, 2, 2))
-# resampled_image.SetInterpolator(sitk.sitkNearestNeighbor)
-# resampled_image.SetSize((int(image.GetSize()[0] / 2), 
-#                           int(image.GetSize()[1] / 2), 
-#                           int(image.GetSize()[2] / 2)))
-# print(f"Size: {resampled_image.GetSize()}")
+output_path = "XCT data/test_piece_output"
+series_filenames = list(['slice_' + str(i).zfill(5) + '.tiff' for i in range(image.GetSize()[2])])
+series_filenames = [os.path.join(output_path, f) for f in series_filenames]
+writer.SetFileNames(series_filenames)
+writer.Execute(image)
+print("hey go check if that worked")
 
 # TRY THIS ALL ON POWELL; THE ONLY ERROR IS A MEMORY ERROR
 
-# """
+"""
 reader = sitk.ImageFileReader()
 reader.SetImageIO("TIFFImageIO")
 
-image_path = "C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_1\\Specimen_1\\segmented_cleaned_combined\\segmented_cleaned_combined"
-image_files = sorted([os.path.join(image_path, f) for f in os.listdir(image_path) if f.endswith(".tif") or f.endswith(".tiff")])
-for image_file in image_files:
+image_path = "XCT data/Specimen_1/segmented_cleaned_combined"
+series_filenames = sorted([os.path.join(image_path, f) for f in os.listdir(image_path) if f.endswith(".tif") or f.endswith(".tiff")])
+for image_file in series_filenames:
     reader.SetFileName(image_file)
     image = reader.Execute()
-    resampled_image = sitk.ResampleImageFilter()
-    resampled_image.SetReferenceImage(image)
-    tellmethings = resampled_image.GetSize()
+    resample_filter = sitk.ResampleImageFilter()
+    resample_filter.SetReferenceImage(image)
+    tellmethings = resample_filter.GetSize()
     print("size before resampling:")
     print(tellmethings)
 
-    resampled_image.SetOutputSpacing((2, 2))
-    resampled_image.SetInterpolator(sitk.sitkNearestNeighbor)
-    resampled_image.SetSize((int(image.GetSize()[0] / 2), 
+    resample_filter.SetOutputSpacing((2, 2))
+    resample_filter.SetInterpolator(sitk.sitkNearestNeighbor)
+    resample_filter.SetSize((int(image.GetSize()[0] / 2), 
                             int(image.GetSize()[1] / 2)))
-    tellmethings = resampled_image.GetSize()
+    tellmethings = resample_filter.GetSize()
     print("size after resampling:")
     print(tellmethings)
-# """
+"""
