@@ -4,64 +4,37 @@ Created on Thu May 22 15:30:25 2025
 
 @author: mirat
 """
-
 import SimpleITK as sitk
-
-import numpy as np
 import os
 
+input_path = "XCT data/test_piece"
+output_path = "XCT data/test_piece_output"
+transform_factor = 1/2  # the factor by which the resolution is increased or decreased (>1 for downsampling)
+
+print("\nReading image stack . . .")
 reader = sitk.ImageSeriesReader()
 reader.SetImageIO("TIFFImageIO")
-
-input_path = "XCT data/test_piece"
 series_filenames = sorted([os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith(".tif") or f.endswith(".tiff")])
 reader.SetFileNames(series_filenames)
 image = reader.Execute()
-# hi
-resample_filter = sitk.ResampleImageFilter()
-# resample_filter.SetReferenceImage(image)
-print(f"Size: {resample_filter.GetSize()}")
 
-resample_filter.SetOutputSpacing((2, 2, 2))
+print("\nResampling . . .")
+resample_filter = sitk.ResampleImageFilter()
+resample_filter.SetReferenceImage(image)
+print(f"   Initial size: {resample_filter.GetSize()}")
+resample_filter.SetOutputSpacing(((1/transform_factor), (1/transform_factor), (1/transform_factor))) # keeps spacing consistent before and after resampling
 resample_filter.SetInterpolator(sitk.sitkNearestNeighbor)
-resample_filter.SetSize((int(image.GetSize()[0] / 2), 
-                          int(image.GetSize()[1] / 2), 
-                          int(image.GetSize()[2] / 2)))
-print(f"Size: {resample_filter.GetSize()}")
+resample_filter.SetSize((int(image.GetSize()[0] * transform_factor),       # multiplies resolution by transform_factor
+                          int(image.GetSize()[1] * transform_factor), 
+                          int(image.GetSize()[2] * transform_factor)))
+print(f"   Resampled size: {resample_filter.GetSize()}")
 image = resample_filter.Execute(image)
 
+print("\nWriting image stack to output folder . . .")
 writer = sitk.ImageSeriesWriter()
 writer.SetImageIO(reader.GetImageIO())
-
-output_path = "XCT data/test_piece_output"
-series_filenames = list(['slice_' + str(i).zfill(5) + '.tiff' for i in range(image.GetSize()[2])])
-series_filenames = [os.path.join(output_path, f) for f in series_filenames]
+series_filenames = list(['slice_' + str(i).zfill(5) + '.tiff' for i in range(image.GetSize()[2])]) # output filename formatting
+series_filenames = [os.path.join(output_path, f) for f in series_filenames] # creates output paths
 writer.SetFileNames(series_filenames)
 writer.Execute(image)
-print("hey go check if that worked")
-
-# TRY THIS ALL ON POWELL; THE ONLY ERROR IS A MEMORY ERROR
-
-"""
-reader = sitk.ImageFileReader()
-reader.SetImageIO("TIFFImageIO")
-
-image_path = "XCT data/Specimen_1/segmented_cleaned_combined"
-series_filenames = sorted([os.path.join(image_path, f) for f in os.listdir(image_path) if f.endswith(".tif") or f.endswith(".tiff")])
-for image_file in series_filenames:
-    reader.SetFileName(image_file)
-    image = reader.Execute()
-    resample_filter = sitk.ResampleImageFilter()
-    resample_filter.SetReferenceImage(image)
-    tellmethings = resample_filter.GetSize()
-    print("size before resampling:")
-    print(tellmethings)
-
-    resample_filter.SetOutputSpacing((2, 2))
-    resample_filter.SetInterpolator(sitk.sitkNearestNeighbor)
-    resample_filter.SetSize((int(image.GetSize()[0] / 2), 
-                            int(image.GetSize()[1] / 2)))
-    tellmethings = resample_filter.GetSize()
-    print("size after resampling:")
-    print(tellmethings)
-"""
+print("\nDone\n")
