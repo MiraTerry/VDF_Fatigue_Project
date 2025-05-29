@@ -7,21 +7,67 @@ Created on Thu May 22 15:30:25 2025
 import SimpleITK as sitk
 import os
 
-# input_path = "XCT data/Specimen_1/segmented_cleaned_combined"
-transform_factor = 1/2  # the factor by which the resolution is increased or decreased (>1 for downsampling)
+def recast_images(input_path,output_path=""):
 
-def resample_stack(input_path,transform_factor):
+    # count how many images have been processed
+    images_processed = 0
+
     # create output folder
-    output_path = input_path + "_downsampled"
+    if output_path == "":
+        output_path = input_path + "recast_compressed"
     print("\nPreparing output folder . . .")
     os.makedirs(output_path)
+
+    # prepare to read images
+    reader = sitk.ImageFileReader()
+    reader.SetImageIO("TIFFImageIO")
+
+    # prepare to write images, set output compression type to LZW
+    writer = sitk.ImageFileWriter()
+    writer.SetCompressor("LZW")
+
+    # process every image in input folder
+    print("Processing images . . .")
+    for f in os.listdir(input_path):
+        if (f.endswith(".tif") or f.endswith("tiff")):
+
+            # read image
+            reader.SetFileName(os.path.join(input_path, f))
+            image = reader.Execute()
+
+            # cast to different data type
+            image = sitk.Cast(image,sitk.sitkUInt8)
+
+            # write image
+            writer.SetFileName(os.path.join(output_path, f))
+            writer.Execute(image)
+
+            images_processed += 1
+            if (images_processed % 50) == 0:
+                print(f"   {images_processed} images processed")
+    print("Done\n")
+            
+def compress_images():
+    # count how many images have been processed
+    images_processed = 0
+
+def resample_stack(transform_factor, input_path, output_path=""):
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "_downsampled"
+    print("\nPreparing output folder . . .")
+    # os.makedirs(output_path)
 
     print("Reading image stack . . .")
     reader = sitk.ImageSeriesReader()
     reader.SetImageIO("TIFFImageIO")
-    series_filenames = sorted([os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith(".tif") or f.endswith(".tiff")])
+    # series_filenames = sorted([os.path.join(input_path, f) for f in os.listdir(input_path) if f.endswith(".tif") or f.endswith(".tiff")])
+    series_filenames = sorted([os.path.join(input_path, f) for f in os.listdir(input_path) if f.startswith("sub2")])
     reader.SetFileNames(series_filenames)
     image = reader.Execute()
+
+    print("Casting to 8-bit. . .")
+    image = sitk.Cast(image,sitk.sitkUInt8)
 
     print("Resampling . . .")
     resample_filter = sitk.ResampleImageFilter()
@@ -44,7 +90,16 @@ def resample_stack(input_path,transform_factor):
     writer.Execute(image)
     print("Done\n")
 
-for i in range(1,11):
-    print(f"\n\nPROCESSING FOLDER {i}:")
-    input_path = "XCT data/Specimen_" + str(i) + "/segmented_cleaned_combined"
-    resample_stack(input_path,transform_factor)
+
+
+# input_path = "XCT data/Specimen_1/segmented_cleaned_combined"
+input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar23_rec\\tomo_sample_5_pink_stitched"
+transform_factor = 1/2  # the factor by which the resolution is increased or decreased (>1 for downsampling)
+recast_images(input_path,output_path="XCT data/Specimen_5/recast_compressed")
+
+# for i in range(1,11):
+#     print(f"\n\nPROCESSING FOLDER {i}:")
+#     input_path = "XCT data/Specimen_" + str(i) + "/segmented_cleaned_combined"
+#     resample_stack(input_path,transform_factor)
+
+# resample_stack(transform_factor,input_path,output_path="XCT data/Specimen_5/resampled")
