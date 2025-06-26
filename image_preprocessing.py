@@ -14,7 +14,7 @@ def recast_images(input_path,output_path=""):
 
     # create output folder
     if output_path == "":
-        output_path = input_path + "recast_compressed"
+        output_path = input_path + "8bit"
     print("\nPreparing output folder . . .")
     os.makedirs(output_path)
 
@@ -24,7 +24,7 @@ def recast_images(input_path,output_path=""):
 
     # prepare to write images, set output compression type to LZW
     writer = sitk.ImageFileWriter()
-    writer.SetCompressor("LZW")
+    # writer.SetCompressor("LZW")
 
     # process every image in input folder
     print("Processing images . . .")
@@ -40,23 +40,64 @@ def recast_images(input_path,output_path=""):
 
             # write image
             writer.SetFileName(os.path.join(output_path, f))
+            writer.SetImageIO("TIFFImageIO")
+            writer.UseCompressionOn()
+            writer.SetCompressor("LZW")
             writer.Execute(image)
 
+            # count total images processed
             images_processed += 1
             if (images_processed % 50) == 0:
                 print(f"   {images_processed} images processed")
     print("Done\n")
             
-def compress_images():
+def compress_images(input_path,output_path=""):
+
     # count how many images have been processed
     images_processed = 0
+
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "\\compressed"
+    print("\nPreparing output folder . . .")
+    os.makedirs(output_path)
+
+    # prepare to read images
+    reader = sitk.ImageFileReader()
+    reader.SetImageIO("TIFFImageIO")
+
+    # prepare to write images, set output compression type to LZW
+    writer = sitk.ImageFileWriter()
+    # writer.SetCompressor("LZW")
+
+    # process every image in input folder
+    print("Processing images . . .")
+    for f in os.listdir(input_path):
+        if (f.endswith(".tif") or f.endswith("tiff")):
+
+            # read image
+            reader.SetFileName(os.path.join(input_path, f))
+            image = reader.Execute()
+
+            # write image
+            writer.SetFileName(os.path.join(output_path, f))
+            writer.SetImageIO("TIFFImageIO")
+            writer.UseCompressionOn()
+            writer.SetCompressor("LZW")
+            writer.Execute(image)
+
+            # count total images processed
+            images_processed += 1
+            if (images_processed % 50) == 0:
+                print(f"   {images_processed} images processed")
+    print("Done\n")
 
 def resample_stack(transform_factor, input_path, output_path=""):
     # create output folder
     if output_path == "":
         output_path = input_path + "_downsampled"
     print("\nPreparing output folder . . .")
-    # os.makedirs(output_path)
+    os.makedirs(output_path)
 
     print("Reading image stack . . .")
     reader = sitk.ImageSeriesReader()
@@ -95,7 +136,9 @@ def resample_stack(transform_factor, input_path, output_path=""):
 # input_path = "XCT data/Specimen_1/segmented_cleaned_combined"
 input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar23_rec\\tomo_sample_5_pink_stitched"
 transform_factor = 1/2  # the factor by which the resolution is increased or decreased (>1 for downsampling)
-recast_images(input_path,output_path="XCT data/Specimen_5/recast_compressed")
+# resample_stack(transform_factor, input_path, output_path="XCT data\\Specimen_5\\unthresholded_downsampled")
+# resample_stack(transform_factor, input_path, output_path="XCT data\\Specimen_5\\unthresholded_8bit_downsampled")
+compress_images(input_path,output_path="XCT data\\Specimen_5\\unthresholded_8bit")
 
 # for i in range(1,11):
 #     print(f"\n\nPROCESSING FOLDER {i}:")
