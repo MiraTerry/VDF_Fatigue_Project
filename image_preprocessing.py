@@ -333,6 +333,25 @@ def rescale_existing_8bits(n,input_path,output_path=""):
     writer.Execute(image)
     print("Done\n")
 
+def stupid_rename(input_path, output_path=""):
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "_renamed"
+    print("\nPreparing output folder . . .")
+    os.makedirs(output_path)
+
+    images_processed = 0
+    # process every image in input folder
+    for layer in os.listdir(input_path):
+        print("LAYER: ", layer)
+        layer_path = os.path.join(input_path, layer)
+        for f in os.listdir(layer_path):
+            if (f.endswith(".tif") or f.endswith("tiff")):
+                os.rename(os.path.join(layer_path, f), os.path.join(output_path, f"{layer}_{f}"))
+                images_processed += 1
+                if (images_processed % 100) == 0:
+                    print(f"   {images_processed} images processed")
+    print("Done\n")
 # input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar2;bkj;bkj3_rec\\tomo_sample_5_pink_stitched"
 # try_shit(1, input_path, output_path=f"XCT data/Specimen_5/thresholded2_sub1")
 
@@ -345,11 +364,14 @@ def rescale_existing_8bits(n,input_path,output_path=""):
 # input_path = "M:\\mcgrath\\data_cleaning\\cleaned_img\\sample_1\\segmented_cleaned\\tomo_sample_1_043_rec"
 # output_path = "XCT data/Specimen_5/divination_deletethis"
 
-input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar23_rec\\tomo_sample_5_pink_stitched"
-output_path = "XCT data/Specimen_5/thresholded_8bit_"
+# input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar23_rec\\tomo_sample_5_pink_stitched"
+# output_path = "XCT data/Specimen_5/thresholded_8bit_"
 
-for n in range(1,8):
-    print(f"\nLAYER {n}:")
-    try_shit(n,input_path, output_path=output_path+f"layer{n}")
+# for n in range(1,8):
+#     print(f"\nLAYER {n}:")
+#     try_shit(n,input_path, output_path=output_path+f"layer{n}")
 
+input_path = "M:\\terry\\fatigue_sample_5\\processed_separately"
+output_path = "C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_separately_combined"
 
+stupid_rename(input_path,output_path=output_path)
