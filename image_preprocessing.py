@@ -192,7 +192,7 @@ def resample_stack(transform_factor, input_path, output_path=""):
     writer.Execute(image)
     print("Done\n")
 
-def try_shit(n,input_path,output_path=""):
+def window_rescale_cast_3d(n,input_path,output_path=""):
 
     # create output folder
     if output_path == "":
@@ -333,7 +333,7 @@ def rescale_existing_8bits(n,input_path,output_path=""):
     writer.Execute(image)
     print("Done\n")
 
-def stupid_rename(input_path, output_path=""):
+def stupid_combine(input_path, output_path=""):
     # create output folder
     if output_path == "":
         output_path = input_path + "_renamed"
@@ -352,26 +352,141 @@ def stupid_rename(input_path, output_path=""):
                 if (images_processed % 100) == 0:
                     print(f"   {images_processed} images processed")
     print("Done\n")
-# input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar2;bkj;bkj3_rec\\tomo_sample_5_pink_stitched"
-# try_shit(1, input_path, output_path=f"XCT data/Specimen_5/thresholded2_sub1")
 
-# input_path = "XCT data/Specimen_5/thresholded2_sub1"
-# recast_images(input_path, output_path=f"XCT data/Specimen_5/8bit_thresholded2_sub1_deletethis")
+def stupid_combine_properly(input_path, output_path="", overlapnum=254):
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "_combined_properly"
+    print("\nPreparing output folder . . .")
+    os.makedirs(output_path)
 
-# input_path = "XCT data/Specimen_5/thresholded2_sub1_deletethis"
-# output_path = "XCT data/Specimen_5/8bit_thresholded2_sub1_deletethis2"
+    layernum = 1
+    print("Deleting images from layers . . .")
+    for layer in os.listdir(input_path): # loop through layers
+        if layernum > 1: # skip first layer
+            print(f"LAYER {layernum}: ", layer)
+            images_deleted = 0
+            for f in os.listdir(os.path.join(input_path, layer)):
+                if images_deleted < overlapnum:
+                    os.remove(os.path.join(input_path, layer, f))
+                    images_deleted += 1
+            print(f"   {images_deleted} images deleted from layer {layernum}")
+        layernum += 1
 
-# input_path = "M:\\mcgrath\\data_cleaning\\cleaned_img\\sample_1\\segmented_cleaned\\tomo_sample_1_043_rec"
-# output_path = "XCT data/Specimen_5/divination_deletethis"
+    images_processed = 0
+    # process every image in input folder
+    print("Combining images . . .")
+    for layer in os.listdir(input_path):
+        print("LAYER: ", layer)
+        layer_path = os.path.join(input_path, layer)
+        for f in os.listdir(layer_path):
+            if (f.endswith(".tif") or f.endswith("tiff")):
+                os.rename(os.path.join(layer_path, f), os.path.join(output_path, f"{layer}_{f}"))
+                images_processed += 1
+                if (images_processed % 100) == 0:
+                    print(f"   {images_processed} images moved")
 
-# input_path = "M:\\ziegler\\APS_Data\\Globus\\spear_mar23_rec\\tomo_sample_5_pink_stitched"
-# output_path = "XCT data/Specimen_5/thresholded_8bit_"
+    print("Done\n")
 
-# for n in range(1,8):
-#     print(f"\nLAYER {n}:")
-#     try_shit(n,input_path, output_path=output_path+f"layer{n}")
+def why_are_you_the_way_you_are():
+    print()
 
-input_path = "M:\\terry\\fatigue_sample_5\\processed_separately"
-output_path = "C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_separately_combined"
+def match_histogram_2d(input_path, output_path="", reference_image_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\the_chosen_one.tiff"):
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "_matched"
+    print("\nPreparing output folder . . .")
+    os.makedirs(output_path)
 
-stupid_rename(input_path,output_path=output_path)
+    # prepare to read images
+    reader = sitk.ImageFileReader()
+    reader.SetImageIO("TIFFImageIO")
+
+    # prepare to write images, set output compression type to LZW
+    writer = sitk.ImageFileWriter()
+    writer.SetImageIO("TIFFImageIO")
+    writer.UseCompressionOn()
+    writer.SetCompressor("LZW")
+
+    # process every image in input folder
+    print("Processing images . . .")
+    images_processed = 0
+    for f in os.listdir(input_path):
+        if (f.endswith(".tif") or f.endswith("tiff")):
+
+            # read image
+            reader.SetFileName(os.path.join(input_path, f))
+            image = reader.Execute()
+
+            # match histogram
+            reference_image = sitk.ReadImage(reference_image_path)
+            image = sitk.HistogramMatching(image, reference_image)
+
+            # write image
+            writer.SetFileName(os.path.join(output_path, f))
+            writer.Execute(image)
+
+            # count total images processed
+            images_processed += 1
+            if (images_processed % 100) == 0:
+                print(f"   {images_processed} images processed")
+
+    print("Done\n")
+
+def match_histogram_3d(input_path, output_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined_matched-by-layer", reference_layer_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together\\thresholded_8bit_layer5"):
+    
+    # create output folder
+    if output_path == "":
+        output_path = input_path + "_matched"
+    print("\nPreparing output folder . . .")
+    os.makedirs(output_path)
+
+    # prepare to write images, set output compression type to LZW
+    writer = sitk.ImageSeriesWriter()
+    writer.SetImageIO("TIFFImageIO")
+    writer.UseCompressionOn()
+    writer.SetCompressor("LZW")
+
+    # prepare to read images
+    reader = sitk.ImageSeriesReader()
+    reader.SetImageIO("TIFFImageIO")
+
+    layernum = 1
+    for layer in os.listdir(input_path):
+
+        layer_path = os.path.join(input_path, layer)
+        print(f"\nLAYER {layernum}:")
+
+        # execute reader
+        print("Reading image stack . . .")
+        series_filenames = sorted([os.path.join(layer_path, f) for f in os.listdir(layer_path) if f.endswith(".tif") or f.endswith(".tiff")])
+        reader.SetFileNames(series_filenames)
+        image = reader.Execute()
+
+        # match histogram
+        reference_filenames = sorted([os.path.join(layer_path, f) for f in os.listdir(reference_layer_path) if f.endswith(".tif") or f.endswith(".tiff")])
+        reader.SetFileNames(reference_filenames)
+        reference_image = reader.Execute()
+        image = sitk.HistogramMatching(image, reference_image)
+
+        # execute writer
+        print("Writing image stack to output folder . . .")
+        series_filenames = list(['layer_' + str(layernum) +'_slice_' + str(i).zfill(5) + '.tiff' for i in range(image.GetSize()[2])]) # output filename formatting
+        series_filenames = [os.path.join(output_path, f) for f in series_filenames] # creates output paths
+        writer.SetFileNames(series_filenames)
+        writer.Execute(image)
+
+        layernum += 1
+
+    print("Done\n")
+
+input_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined"
+output_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined_matched2"
+match_histogram_2d(input_path, output_path=output_path)
+
+
+# for n in range(6,11):
+#     print(f"\nSAMPLE {n}:")
+#     input_path = (f"C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_{n}\\segmented_cleaned - Copy")
+#     output_path = (f"C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_{n}\\segmented_cleaned_combined_properly")
+#     stupid_combine_properly(input_path, output_path=output_path)
