@@ -26,7 +26,7 @@ def resample_stack(transform_factor, input_path, output_path=""):
     resample_filter.SetReferenceImage(image)
     print(f"   Initial size: {resample_filter.GetSize()}")
     resample_filter.SetOutputSpacing(((1/transform_factor), (1/transform_factor), (1/transform_factor))) # keeps spacing consistent before and after resampling
-    resample_filter.SetInterpolator(sitk.sitkNearestNeighbor)
+    resample_filter.SetInterpolator(sitk.sitkLinear)
     resample_filter.SetSize((int(image.GetSize()[0] * transform_factor), # multiplies resolution by transform_factor
                             int(image.GetSize()[1] * transform_factor), 
                             int(image.GetSize()[2] * transform_factor)))
@@ -42,6 +42,8 @@ def resample_stack(transform_factor, input_path, output_path=""):
     writer.Execute(image)
     print("Done\n")
 
-input_path=""
-output_path=""
+
+
+input_path="XCT data/full_visualizations/s1_full_scan"
+output_path="XCT data/downsampled_scans/s1"
 resample_stack(3, input_path, output_path=output_path)
