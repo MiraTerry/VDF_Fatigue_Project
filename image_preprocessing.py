@@ -6,6 +6,10 @@ Created on Thu May 22 15:30:25 2025
 """
 import SimpleITK as sitk
 import os
+import matplotlib.pyplot as plt
+import skimage
+from skimage import exposure
+from skimage.exposure import match_histograms
 
 def recast_images(input_path,output_path=""):
 
@@ -118,11 +122,11 @@ def compress_images(input_path,output_path=""):
     # count how many images have been processed
     images_processed = 0
 
-    # create output folder
-    if output_path == "":
-        output_path = input_path + "\\compressed"
-    print("\nPreparing output folder . . .")
-    os.makedirs(output_path)
+    # # create output folder
+    # if output_path == "":
+    #     output_path = input_path + "\\compressed"
+    # print("\nPreparing output folder . . .")
+    # os.makedirs(output_path)
 
     # prepare to read images
     reader = sitk.ImageFileReader()
@@ -388,10 +392,7 @@ def stupid_combine_properly(input_path, output_path="", overlapnum=254):
 
     print("Done\n")
 
-def why_are_you_the_way_you_are():
-    print()
-
-def match_histogram_2d(input_path, output_path="", reference_image_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\the_chosen_one.tiff"):
+def match_histogram_2d(input_path, output_path="", reference_image_path="C:\\Users\\Mira\\terry\\VDF_Fatigue_Project\\XCT data\\Specimen_5\\the_chosen_one.tiff"):
     # create output folder
     if output_path == "":
         output_path = input_path + "_matched"
@@ -435,11 +436,11 @@ def match_histogram_2d(input_path, output_path="", reference_image_path="C:\\Use
 
 def match_histogram_3d(input_path, output_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined_matched-by-layer", reference_layer_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together\\thresholded_8bit_layer5"):
     
-    # create output folder
-    if output_path == "":
-        output_path = input_path + "_matched"
-    print("\nPreparing output folder . . .")
-    os.makedirs(output_path)
+    # # create output folder
+    # if output_path == "":
+    #     output_path = input_path + "_matched"
+    # print("\nPreparing output folder . . .")
+    # os.makedirs(output_path)
 
     # prepare to write images, set output compression type to LZW
     writer = sitk.ImageSeriesWriter()
@@ -480,9 +481,32 @@ def match_histogram_3d(input_path, output_path="C:\\Users\\mirat\\VDF_Fatigue_Pr
 
     print("Done\n")
 
-input_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined"
-output_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined_matched2"
-match_histogram_2d(input_path, output_path=output_path)
+def match_histogram_2d_skimage( input_path, output_path="", reference_image_path="C:\\Users\\Mira\\terry\\VDF_Fatigue_Project\\XCT data\\Specimen_5\\the_chosen_one.tiff"):
+
+    # # create output folder
+    # if output_path == "":
+    #     output_path = input_path + "_matched_skimage"
+    # print("\nPreparing output folder . . .")
+    # os.makedirs(output_path)
+
+    reference = skimage.io.imread(reference_image_path)
+    slicenum = 0
+
+    print("Processing images . . .")
+    for f in os.listdir(input_path):
+        image = skimage.io.imread(f)
+        matched = match_histograms(image, reference, channel_axis=-1)
+        skimage.io.imsave((os.path.join(output_path,(f"slice_{slicenum.zfill(4)}"))), matched)
+        slicenum += 1
+        
+        if (slicenum % 100) == 0:
+            print(f"   {slicenum} images processed")
+
+    print("Done\n")
+
+# input_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined"
+# output_path="C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_5\\processed_together_combined_matched_skimage"
+# match_histogram_2d_skimage(input_path, output_path=output_path)
 
 
 # for n in range(6,11):
@@ -490,3 +514,7 @@ match_histogram_2d(input_path, output_path=output_path)
 #     input_path = (f"C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_{n}\\segmented_cleaned - Copy")
 #     output_path = (f"C:\\Users\\mirat\\VDF_Fatigue_Project\\Fatigue_Samples_XCT_Data\\Specimen_{n}\\segmented_cleaned_combined_properly")
 #     stupid_combine_properly(input_path, output_path=output_path)
+
+input_path = "m:\\terry\\fatigue_sample_5\\processed_separately"
+output_path = "XCT data/Specimen_5/3d_histogram_matched"
+match_histogram_3d(input_path, output_path=output_path)
